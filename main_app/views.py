@@ -10,15 +10,39 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import UserProfile
+from .serializers import UserProfileSerializer
 # Create your views here.
 
 
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        profile = get_object_or_404(UserProfile, user=user)
+
+        serializer = UserProfileSerializer(profile)
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": serializer.data.get("role"),
+            "illness": serializer.data.get("illness"),
+            "created_at": serializer.data.get("created_at")
+        }, status=status.HTTP_200_OK)
+
+
+
+        
 class SignupUserView(APIView):
     permission_classes = [AllowAny]
     
-    
     def post(self, request):
         data = request.data
+        first_name = data.get("first_name", "")
+        last_name = data.get("last_name", "")
         username = data.get("username")
         email = data.get("email")
         password = data.get("password")
@@ -27,7 +51,7 @@ class SignupUserView(APIView):
         illness = data.get("illness", "")
         
         
-        required_fields = [username, email, password, confirm_password, role]
+        required_fields = [username, email, password, confirm_password, role, first_name, last_name]
         if not all(required_fields):
             return Response(
                 {"error": "All required fields must be provided."},
@@ -66,7 +90,7 @@ class SignupUserView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
-        user = User.objects.create_user(username=username, email=email, password=password)
+        user = User.objects.create_user(username=username,email=email,password=password,first_name=first_name,last_name=last_name)
         
         if role == "patient":
             illness_value = illness
@@ -85,6 +109,8 @@ class SignupUserView(APIView):
             "message": "Account created successfully.",
             "user": {
                 "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
                 "username": user.username,
                 "email": user.email,
                 "role": role,
