@@ -4,32 +4,45 @@ from .models import UserProfile, Post, PostComment, PostLike, Donation
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only = True, required=True)
-    confirm_password = serializers.CharField(write_only = True, required=True)
-    
-    class Meta: 
+    role = serializers.CharField(source="userprofile.role", read_only=True)
+    illness = serializers.CharField(source="userprofile.illness", read_only=True)
+
+    class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'confirm_password']
-        
-    
-    def validate(self, data):
-        if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError("Password do not match")
-        return data
-    
-    
-    def create(self, validated_data):
-        validated_data.pop('confirm_password')
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data.get('email'),
-            password=validated_data['password']
-        )
-        return user
-    
-    
-    
+        fields = ["id", "username", "email", "first_name", "last_name", "role", "illness"]
+
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = UserProfile
-        fields = '__all__'
+        fields = ["id", "user", "role", "illness", "created_at"]
+
+
+
+class PostSerializer(serializers.ModelSerializer):
+    patient = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Post
+        fields = "__all__"
+
+
+class PostCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostComment
+        fields = "__all__"
+
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLike
+        fields = "__all__"
+
+
+class DonationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Donation
+        fields = "__all__"
