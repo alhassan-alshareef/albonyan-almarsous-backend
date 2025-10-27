@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Post, PostComment, PostLike, Donation
 
 
-class UserSerilaizer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only = True, required=True)
     confirm_password = serializers.CharField(write_only = True, required=True)
     
@@ -26,3 +26,10 @@ class UserSerilaizer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+    
+    
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = '__all__'
