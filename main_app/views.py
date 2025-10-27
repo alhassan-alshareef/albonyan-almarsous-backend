@@ -17,12 +17,8 @@ from .serializers import UserProfileSerializer
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user = request.user
-        profile = get_object_or_404(UserProfile, user=user)
-
-        serializer = UserProfileSerializer(profile)
-        return Response({
+    def get_profile_data(self, user, serializer):
+        return {
             "id": user.id,
             "username": user.username,
             "email": user.email,
@@ -30,10 +26,26 @@ class ProfileView(APIView):
             "last_name": user.last_name,
             "role": serializer.data.get("role"),
             "illness": serializer.data.get("illness"),
-            "created_at": serializer.data.get("created_at")
-        }, status=status.HTTP_200_OK)
+            "created_at": serializer.data.get("created_at"),
+        }
 
+    def get(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        serializer = UserProfileSerializer(profile)
+        data = self.get_profile_data(request.user, serializer)
+        return Response(data, status=status.HTTP_200_OK)
 
+    def put(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            data = self.get_profile_data(request.user, serializer)
+            return Response({
+                "message": "Profile updated successfully.",
+                "profile": data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         
 class SignupUserView(APIView):
@@ -109,8 +121,8 @@ class SignupUserView(APIView):
             "message": "Account created successfully.",
             "user": {
                 "id": user.id,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
+                "firstName":user.first_name,
+                "lastName":user.last_name,
                 "username": user.username,
                 "email": user.email,
                 "role": role,
