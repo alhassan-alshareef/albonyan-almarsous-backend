@@ -52,6 +52,7 @@ class SignupUserView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        print("📩 Incoming signup data:", request.data)
         data = request.data
         first_name = data.get("first_name", "")
         last_name = data.get("last_name", "")
@@ -131,5 +132,8 @@ class SignupUserView(APIView):
             "tokens": {
                 "refresh": str(refresh),
                 "access": str(refresh.access_token)
-            }
+            }, 
         }, status=status.HTTP_201_CREATED)
+        
+        
+
