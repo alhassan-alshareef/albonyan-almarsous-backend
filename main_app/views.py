@@ -10,9 +10,41 @@ from django.contrib.auth.password_validation import validate_password
 
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserProfile
-from .serializers import UserProfileSerializer, UserSerializer
+from .models import UserProfile, Post
+from .serializers import UserProfileSerializer, UserSerializer, PostSerializer
 # Create your views here.
+
+class PostListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        profile = get_object_or_404(UserProfile, user=user)
+        if profile.role == 'patient':
+            posts = Post.objects.filter(patient=user)
+        else:
+            posts = Post.objects.all()
+
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def post(self, request):
+        user = request.user
+        profile = get_object_or_404(UserProfile, user=user)
+
+        if profile.role != 'patient':
+            return Response({'error': 'Only patients can create posts.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PostSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(patient=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 
 
 class ProfileView(APIView):
