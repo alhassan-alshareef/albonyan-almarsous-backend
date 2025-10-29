@@ -50,7 +50,29 @@ class PostDetailView(APIView):
         post = get_object_or_404(Post, id=post_id)
         serializer = PostSerializer(post)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
 
+        if post.patient != request.user:
+            return Response({'error': 'You can edit only your own posts.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PostSerializer(post, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def delete(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        print("Patient:", post.patient.id, "User:", request.user.id)
+
+        if post.patient != request.user:
+            return Response({'error': 'You can delete only your own posts.'}, status=status.HTTP_403_FORBIDDEN)
+
+        post.delete()
+        return Response({'message': 'Post deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
 
 
