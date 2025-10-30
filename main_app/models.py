@@ -30,6 +30,10 @@ class Post(models.Model):
     def __str__(self):
         return f"Post by: {self.patient.username}"
     
+    class Meta:
+        ordering = ['-created_at']
+
+    
 
 class PostComment (models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
