@@ -68,7 +68,17 @@ class Donation(models.Model):
     def save(self, *args, **kwargs):
         if self.supporter == self.patient:
             raise ValueError("A patient cannot donate to themselves.")
+        
+        if self.amount_donated >= self.target_amount:
+            self.is_active = False
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Donation from {self.supporter.username} to {self.patient.username}"
+    
+    @property
+    def progress(self):
+        if self.target_amount > 0:
+            return round((self.amount_donated / self.target_amount) * 100, 2)
+        return 0

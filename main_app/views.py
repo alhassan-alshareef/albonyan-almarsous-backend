@@ -66,8 +66,7 @@ class PostDetailView(APIView):
     
     def delete(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
-        print("Patient:", post.patient.id, "User:", request.user.id)
-
+        print("Patient:", post.patient.id, "User:", request.user.id) # for debugging, remove in production
         if post.patient != request.user:
             return Response({'error': 'You can delete only your own posts.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -81,15 +80,16 @@ class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_profile_data(self, user, serializer):
+        data = serializer.data
         return {
             "id": user.id,
             "username": user.username,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": serializer.data.get("role"),
-            "illness": serializer.data.get("illness"),
-            "created_at": serializer.data.get("created_at"),
+            "role": data.get("role"),
+            "illness": data.get("illness"),
+            "created_at": data.get("created_at"),
         }
 
     def get(self, request):
@@ -131,7 +131,7 @@ class SignupUserView(APIView):
         required_fields = [username, email, password, confirm_password, role, first_name, last_name]
         if not all(required_fields):
             return Response(
-                {"error": "All required fields must be provided."},
+                {"error": "Please fill all required fields."},
                 status=status.HTTP_400_BAD_REQUEST
             )
             
@@ -143,13 +143,13 @@ class SignupUserView(APIView):
 
         if password != confirm_password:
             return Response(
-                {"error": "Passwords do not match."},
+                {"error": "Passwords don't match."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if role not in ["patient", "supporter"]:
             return Response(
-                {"error": "Invalid role."},
+                {"error": "Choose a valid role."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
