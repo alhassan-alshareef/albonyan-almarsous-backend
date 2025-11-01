@@ -46,3 +46,4 @@ class DonationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
         fields = "__all__"
+        read_only_fields = ["patient", "amount_donated", "is_active", "created_at"]

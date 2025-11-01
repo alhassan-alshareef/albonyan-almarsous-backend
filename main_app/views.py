@@ -10,8 +10,8 @@ from django.contrib.auth.password_validation import validate_password
 
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserProfile, Post
-from .serializers import UserProfileSerializer, UserSerializer, PostSerializer
+from .models import UserProfile, Post,Donation
+from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, DonationSerializer
 # Create your views here.
 
 class PostListCreateView(APIView):
@@ -74,6 +74,24 @@ class PostDetailView(APIView):
         return Response({'message': 'Post deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
 
+class PatientCreateDonationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+
+        if user_profile.role != "patient":
+            return Response(
+                {"error": "Only patients can create donation."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = DonationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(patient=request.user, supporter=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(APIView):

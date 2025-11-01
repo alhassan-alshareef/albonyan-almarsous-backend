@@ -56,7 +56,6 @@ class PostLike (models.Model):
     
 
 class Donation(models.Model):
-    supporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donations_made')
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donations_received')
     title = models.CharField(max_length=50)
     target_amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -65,20 +64,18 @@ class Donation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     
-    def save(self, *args, **kwargs):
-        if self.supporter == self.patient:
-            raise ValueError("A patient cannot donate to themselves.")
-        
-        if self.amount_donated >= self.target_amount:
-            self.is_active = False
+    def __str__(self):
+        return f"{self.title} ({self.patient.username})"
 
-        super().save(*args, **kwargs)
+    class Meta:
+        ordering = ['-created_at']
+
+    
+class DonationPayment(models.Model):
+    donation = models.ForeignKey(Donation, on_delete=models.CASCADE, related_name='payments')
+    supporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donations_made')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Donation from {self.supporter.username} to {self.patient.username}"
-    
-    @property
-    def progress(self):
-        if self.target_amount > 0:
-            return round((self.amount_donated / self.target_amount) * 100, 2)
-        return 0
+        return f"{self.supporter.username} donated {self.amount} to {self.donation.title}"
