@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
+
 
 User = get_user_model()
 # Create your models here.
@@ -58,6 +60,7 @@ class PostLike (models.Model):
 class Donation(models.Model):
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donations_received')
     title = models.CharField(max_length=50)
+    description = models.TextField(blank=True, null=True) 
     target_amount = models.DecimalField(max_digits=10, decimal_places=2)
     amount_donated = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
@@ -65,12 +68,9 @@ class Donation(models.Model):
     
     
     def save(self, *args, **kwargs):
-        
-        if self.amount_donated >= self.target_amount:
-            self.is_active = False
+        self.is_active = self.amount_donated < self.target_amount
         super().save(*args, **kwargs)
-    
-    
+
     def __str__(self):
         return f"{self.title} ({self.patient.username})"
 
@@ -83,6 +83,26 @@ class DonationPayment(models.Model):
     supporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donations_made')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+
+    def save(self, *args, **kwargs):
+        if self.donation.patient_id == self.supporter_id:
+            raise ValueError("Patients cannot donate to their own campaigns.")
+
+        new_total = self.donation.amount_donated + self.amount
+        if new_total > self.donation.target_amount:
+            raise ValueError("Donation exceeds the campaign target amount.")
+
+
+        super().save(*args, **kwargs)
+
+
+        donation = self.donation
+        total = donation.payments.aggregate(total=Sum('amount'))['total'] or 0
+        donation.amount_donated = total
+        donation.is_active = total < donation.target_amount
+        donation.save(update_fields=['amount_donated', 'is_active'])
 
     def __str__(self):
         return f"{self.supporter.username} donated {self.amount} to {self.donation.title}"

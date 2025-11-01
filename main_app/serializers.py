@@ -54,9 +54,18 @@ class DonationPaymentSerializer(serializers.ModelSerializer):
 
 
 class DonationSerializer(serializers.ModelSerializer):
+    patient = UserSerializer(read_only=True)
     payments = DonationPaymentSerializer(many=True, read_only=True)
+    progress_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = Donation
         fields = "__all__"
         read_only_fields = ["patient", "amount_donated", "is_active", "created_at"]
+        
+    def get_progress_percentage(self, obj):  
+        if obj.target_amount == 0:
+            return 0
+        return round((obj.amount_donated / obj.target_amount) * 100, 2)
+    
+    
