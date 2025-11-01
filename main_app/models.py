@@ -64,6 +64,13 @@ class Donation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     
+    def save(self, *args, **kwargs):
+        
+        if self.amount_donated >= self.target_amount:
+            self.is_active = False
+        super().save(*args, **kwargs)
+    
+    
     def __str__(self):
         return f"{self.title} ({self.patient.username})"
 

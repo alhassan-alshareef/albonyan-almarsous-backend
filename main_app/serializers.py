@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Post, PostComment, PostLike, Donation
+from .models import UserProfile, Post, PostComment, PostLike, Donation,DonationPayment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -42,7 +42,20 @@ class PostLikeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+
+
+class DonationPaymentSerializer(serializers.ModelSerializer):
+    supporter = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = DonationPayment
+        fields = "__all__"
+        read_only_fields = ["supporter", "created_at"]
+
+
 class DonationSerializer(serializers.ModelSerializer):
+    payments = DonationPaymentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Donation
         fields = "__all__"

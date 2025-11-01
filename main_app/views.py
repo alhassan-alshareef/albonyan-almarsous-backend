@@ -73,27 +73,65 @@ class PostDetailView(APIView):
         post.delete()
         return Response({'message': 'Post deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
 
-
-class PatientCreateDonationView(APIView):
+#-------------------------------------------------------------------------------------------------------------
+class PatientDonationListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        user_profile = get_object_or_404(UserProfile, user=request.user)
+    def get(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
 
-        if user_profile.role != "patient":
+        if profile.role != "patient":
             return Response(
-                {"error": "Only patients can create donation."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Only patients can view their campaigns."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        donations = Donation.objects.filter(patient=request.user)
+        serializer = DonationSerializer(donations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def post(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
+
+        if profile.role != "patient":
+            return Response(
+                {"error": "Only patients can create campaigns."},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         serializer = DonationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(patient=request.user, supporter=request.user)
+            serializer.save(patient=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class PatientDonationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, donation_id):
+        donation = get_object_or_404(Donation, id=donation_id, patient=request.user)
+        serializer = DonationSerializer(donation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def put(self, request, donation_id):
+        donation = get_object_or_404(Donation, id=donation_id, patient=request.user)
+        serializer = DonationSerializer(donation, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def delete(self, request, donation_id):
+        donation = get_object_or_404(Donation, id=donation_id, patient=request.user)
+        donation.delete()
+        return Response({"message": "Donation deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+#-------------------------------------------------------------------------------------------------------------
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -128,7 +166,7 @@ class ProfileView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        
+#-------------------------------------------------------------------------------------------------------------        
 class SignupUserView(APIView):
     permission_classes = [AllowAny]
     
@@ -218,7 +256,7 @@ class SignupUserView(APIView):
         }, status=status.HTTP_201_CREATED)
         
 
-
+#-------------------------------------------------------------------------------------------------------------
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
