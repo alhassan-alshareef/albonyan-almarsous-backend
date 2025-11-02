@@ -10,8 +10,8 @@ from django.contrib.auth.password_validation import validate_password
 
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserProfile, Post,Donation
-from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, DonationSerializer
+from .models import UserProfile, Post, Donation, DonationPayment
+from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, DonationSerializer, DonationPaymentSerializer
 # Create your views here.
 
 class PostListCreateView(APIView):
@@ -130,6 +130,36 @@ class PatientDonationDetailView(APIView):
         donation = get_object_or_404(Donation, id=donation_id, patient=request.user)
         donation.delete()
         return Response({"message": "Donation deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+#-------------------------------------------------------------------------------------------------------------  
+    
+class DonationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        if profile.role != "supporter":
+            return Response({"error": "Only supporters can view donations."}, status=status.HTTP_403_FORBIDDEN)
+        donations = Donation.objects.filter(is_active=True).select_related("patient")
+        serializer = DonationSerializer(donations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class DonationPayView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, donation_id):
+        data = request.data.copy()
+        data["donation"] = donation_id
+
+        serializer = DonationPaymentSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Donation successful!",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 #-------------------------------------------------------------------------------------------------------------
 class ProfileView(APIView):
@@ -154,16 +184,24 @@ class ProfileView(APIView):
         data = self.get_profile_data(request.user, serializer)
         return Response(data, status=status.HTTP_200_OK)
 
+
     def put(self, request):
         profile = get_object_or_404(UserProfile, user=request.user)
+        user = request.user 
+
+        for field in ["username","first_name", "last_name", "email"]:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+        user.save()
+
         serializer = UserProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            data = self.get_profile_data(request.user, serializer)
-            return Response({
-                "message": "Profile updated successfully.",
-                "profile": data
-            }, status=status.HTTP_200_OK)
+            data = self.get_profile_data(user, serializer)
+            return Response(
+                {"message": "Profile updated successfully.", "profile": data},
+                status=status.HTTP_200_OK,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #-------------------------------------------------------------------------------------------------------------        

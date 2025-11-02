@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
+from django.core.exceptions import ValidationError
 
 
 User = get_user_model()
@@ -86,23 +87,24 @@ class DonationPayment(models.Model):
     
     
 
-    def save(self, *args, **kwargs):
+    def clean(self):
         if self.donation.patient_id == self.supporter_id:
-            raise ValueError("Patients cannot donate to their own campaigns.")
+            raise ValidationError("Patients cannot donate to their own campaigns.")
 
-        new_total = self.donation.amount_donated + self.amount
-        if new_total > self.donation.target_amount:
-            raise ValueError("Donation exceeds the campaign target amount.")
+        total = self.donation.amount_donated + self.amount
+        if total > self.donation.target_amount:
+            raise ValidationError("Donation exceeds the campaign target amount.")
 
-
+    def save(self, *args, **kwargs):
+        self.clean()
         super().save(*args, **kwargs)
 
-
-        donation = self.donation
-        total = donation.payments.aggregate(total=Sum('amount'))['total'] or 0
-        donation.amount_donated = total
-        donation.is_active = total < donation.target_amount
-        donation.save(update_fields=['amount_donated', 'is_active'])
+        total_donated = (
+            self.donation.payments.aggregate(total=Sum("amount"))["total"] or 0
+        )
+        self.donation.amount_donated = total_donated
+        self.donation.is_active = total_donated < self.donation.target_amount
+        self.donation.save(update_fields=["amount_donated", "is_active"])
 
     def __str__(self):
         return f"{self.supporter.username} donated {self.amount} to {self.donation.title}"

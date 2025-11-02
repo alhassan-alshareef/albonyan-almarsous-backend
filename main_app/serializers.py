@@ -45,12 +45,13 @@ class PostLikeSerializer(serializers.ModelSerializer):
 
 
 class DonationPaymentSerializer(serializers.ModelSerializer):
-    supporter = serializers.StringRelatedField(read_only=True)
+    
+    supporter = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = DonationPayment
-        fields = "__all__"
-        read_only_fields = ["supporter", "created_at"]
+        fields = ["id", "donation", "supporter", "amount", "created_at"]
+        read_only_fields = ["id", "supporter", "created_at"]
 
 
 class DonationSerializer(serializers.ModelSerializer):
