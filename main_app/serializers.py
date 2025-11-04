@@ -37,6 +37,7 @@ class PostSerializer(serializers.ModelSerializer):
             "username": obj.patient.username,
             "first_name": obj.patient.first_name,
             "last_name": obj.patient.last_name,
+            "illness": getattr(obj.patient.userprofile, "illness", "")
         }
 
     def get_comments_count(self, obj):
