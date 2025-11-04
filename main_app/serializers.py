@@ -31,27 +31,39 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostCommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
     class Meta:
         model = PostComment
-        fields = "__all__"
+        fields = ["id", "post", "user", "username", "content", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]
 
 
 class PostLikeSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+
     class Meta:
         model = PostLike
-        fields = "__all__"
+        fields = ["id", "post", "user", "username", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]
 
 
 
 
 class DonationPaymentSerializer(serializers.ModelSerializer):
-    
     supporter = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    supporter_info = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = DonationPayment
-        fields = ["id", "donation", "supporter", "amount", "created_at"]
-        read_only_fields = ["id", "supporter", "created_at"]
+        fields = ["id", "donation", "supporter", "supporter_info","amount", "created_at"]
+        read_only_fields = ["id", "supporter_info", "created_at"]
+        
+    def get_supporter_info(self, obj):
+        return {
+            "id": obj.supporter.id,
+            "username": obj.supporter.username
+        }
 
 
 class DonationSerializer(serializers.ModelSerializer):
@@ -63,10 +75,8 @@ class DonationSerializer(serializers.ModelSerializer):
         model = Donation
         fields = "__all__"
         read_only_fields = ["patient", "amount_donated", "is_active", "created_at"]
-        
-    def get_progress_percentage(self, obj):  
-        if obj.target_amount == 0:
+
+    def get_progress_percentage(self, obj):
+        if not obj.target_amount:
             return 0
         return round((obj.amount_donated / obj.target_amount) * 100, 2)
-    
-    

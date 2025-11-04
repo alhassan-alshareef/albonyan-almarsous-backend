@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import SignupUserView,ProfileView, LoginView, PostListCreateView, PostDetailView, PatientDonationListCreateView, PatientDonationDetailView,DonationListView,DonationPayView
+from .views import SignupUserView,ProfileView, LoginView, PostListCreateView, PostDetailView, PatientDonationListCreateView, PatientDonationDetailView,DonationListView,DonationPayView,DonationDetailView
 
 urlpatterns = [
     path('signup/', SignupUserView.as_view(), name='signup'),
@@ -15,5 +15,6 @@ urlpatterns = [
     path("patient/donations/<int:donation_id>/", PatientDonationDetailView.as_view(), name="patient-donation-detail"),
     
     path("donations/", DonationListView.as_view(), name="donation-list"),
+    path("donations/<int:donation_id>/", DonationDetailView.as_view(), name="donation-detail"),
     path("donations/<int:donation_id>/pay/", DonationPayView.as_view(), name="donation-pay"),
 ]

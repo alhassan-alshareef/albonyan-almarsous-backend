@@ -66,17 +66,18 @@ class Donation(models.Model):
     amount_donated = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
+    class Meta:
+        ordering = ['-created_at']
+        
     
     def save(self, *args, **kwargs):
+
         self.is_active = self.amount_donated < self.target_amount
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} ({self.patient.username})"
-
-    class Meta:
-        ordering = ['-created_at']
+        return f"{self.title} - {self.patient.username}"
 
     
 class DonationPayment(models.Model):
@@ -91,20 +92,18 @@ class DonationPayment(models.Model):
         if self.donation.patient_id == self.supporter_id:
             raise ValidationError("Patients cannot donate to their own campaigns.")
 
-        total = self.donation.amount_donated + self.amount
-        if total > self.donation.target_amount:
+        if self.donation.amount_donated + self.amount > self.donation.target_amount:
             raise ValidationError("Donation exceeds the campaign target amount.")
 
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
 
-        total_donated = (
-            self.donation.payments.aggregate(total=Sum("amount"))["total"] or 0
-        )
-        self.donation.amount_donated = total_donated
-        self.donation.is_active = total_donated < self.donation.target_amount
-        self.donation.save(update_fields=["amount_donated", "is_active"])
+        total = self.donation.payments.aggregate(total=Sum("amount"))["total"] or 0
+        donation = self.donation
+        donation.amount_donated = total
+        donation.is_active = total < donation.target_amount
+        donation.save(update_fields=["amount_donated", "is_active"])
 
     def __str__(self):
         return f"{self.supporter.username} donated {self.amount} to {self.donation.title}"

@@ -138,11 +138,31 @@ class DonationListView(APIView):
 
     def get(self, request):
         profile = get_object_or_404(UserProfile, user=request.user)
+
         if profile.role != "supporter":
-            return Response({"error": "Only supporters can view donations."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Only supporters can view donations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         donations = Donation.objects.filter(is_active=True).select_related("patient")
         serializer = DonationSerializer(donations, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class DonationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, donation_id):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        if profile.role == "patient":
+            donation = get_object_or_404(Donation, id=donation_id, patient=request.user)
+        else:
+            donation = get_object_or_404(Donation, id=donation_id)
+
+        serializer = DonationSerializer(donation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class DonationPayView(APIView):
     permission_classes = [IsAuthenticated]
@@ -151,13 +171,14 @@ class DonationPayView(APIView):
         data = request.data.copy()
         data["donation"] = donation_id
 
-        serializer = DonationPaymentSerializer(data=data, context={'request': request})
+        serializer = DonationPaymentSerializer(data=data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            return Response({
-                "message": "Donation successful!",
-                "data": serializer.data
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {"message": "Donation successful!", "data": serializer.data},
+                status=status.HTTP_201_CREATED,
+            )
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
