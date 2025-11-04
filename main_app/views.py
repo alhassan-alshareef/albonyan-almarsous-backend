@@ -25,7 +25,7 @@ class PostListCreateView(APIView):
         else:
             posts = Post.objects.all()
 
-        serializer = PostSerializer(posts, many=True)
+        serializer = PostSerializer(posts, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -48,7 +48,7 @@ class PostDetailView(APIView):
 
     def get(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
-        serializer = PostSerializer(post)
+        serializer = PostSerializer(post, context={"request": request}) 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def put(self, request, post_id):
@@ -57,7 +57,7 @@ class PostDetailView(APIView):
         if post.patient != request.user:
             return Response({'error': 'You can edit only your own posts.'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = PostSerializer(post, data=request.data)
+        serializer = PostSerializer(post, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

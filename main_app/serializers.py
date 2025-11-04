@@ -26,6 +26,7 @@ class PostSerializer(serializers.ModelSerializer):
     patient = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
+    is_liked_by_user = serializers.SerializerMethodField() 
 
     class Meta:
         model = Post
@@ -45,6 +46,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_likes_count(self, obj):
         return PostLike.objects.filter(post=obj).count()
+    
+    def get_is_liked_by_user(self, obj):
+        request = self.context.get("request", None)
+        if request and request.user.is_authenticated:
+            return PostLike.objects.filter(post=obj, user=request.user).exists()
+        return False
 
 
 class PostCommentSerializer(serializers.ModelSerializer):
