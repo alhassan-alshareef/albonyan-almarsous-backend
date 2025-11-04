@@ -23,11 +23,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    patient = UserSerializer(read_only=True)
+    patient = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = "__all__"
+
+    def get_patient(self, obj):
+        return {
+            "id": obj.patient.id,
+            "username": obj.patient.username,
+            "first_name": obj.patient.first_name,
+            "last_name": obj.patient.last_name,
+        }
+
+    def get_comments_count(self, obj):
+        return PostComment.objects.filter(post=obj).count()
+
+    def get_likes_count(self, obj):
+        return PostLike.objects.filter(post=obj).count()
 
 
 class PostCommentSerializer(serializers.ModelSerializer):

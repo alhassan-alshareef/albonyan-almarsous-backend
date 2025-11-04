@@ -10,8 +10,8 @@ from django.contrib.auth.password_validation import validate_password
 
 from django.core.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserProfile, Post, Donation, DonationPayment
-from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, DonationSerializer, DonationPaymentSerializer
+from .models import UserProfile, Post, Donation, DonationPayment, PostComment, PostLike
+from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, DonationSerializer, DonationPaymentSerializer,PostCommentSerializer, PostLikeSerializer
 # Create your views here.
 
 class PostListCreateView(APIView):
@@ -181,6 +181,69 @@ class DonationPayView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+#-------------------------------------------------------------------------------------------------------------
+
+class PostCommentListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, post_id):
+        comments = PostComment.objects.filter(post_id=post_id).order_by("-created_at")
+        serializer = PostCommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, post_id):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        if profile.role != "supporter":
+            return Response({"error": "Only supporters can comment."}, status=status.HTTP_403_FORBIDDEN)
+
+        post = get_object_or_404(Post, id=post_id)
+        serializer = PostCommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PostCommentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, comment_id):
+        comment = get_object_or_404(PostComment, id=comment_id)
+
+        if comment.user != request.user:
+            return Response({"error": "You can edit only your own comment."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = PostCommentSerializer(comment, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, comment_id):
+        comment = get_object_or_404(PostComment, id=comment_id)
+        if comment.user != request.user:
+            return Response({"error": "You can delete only your own comment."}, status=status.HTTP_403_FORBIDDEN)
+
+        comment.delete()
+        return Response({"message": "Comment deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+class PostLikeToggleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        profile = get_object_or_404(UserProfile, user=request.user)
+        if profile.role != "supporter":
+            return Response({"error": "Only supporters can like posts."}, status=status.HTTP_403_FORBIDDEN)
+
+        post = get_object_or_404(Post, id=post_id)
+        like, created = PostLike.objects.get_or_create(post=post, user=request.user)
+        if not created:
+            like.delete()
+            return Response({"message": "Like removed"}, status=status.HTTP_200_OK)
+        return Response({"message": "Post liked"}, status=status.HTTP_201_CREATED)
 
 #-------------------------------------------------------------------------------------------------------------
 class ProfileView(APIView):
