@@ -52,7 +52,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostComment
         fields = ["id", "post", "user", "username", "content", "created_at"]
-        read_only_fields = ["id", "user", "created_at"]
+        read_only_fields = ["id","post", "user", "created_at"]
 
 
 class PostLikeSerializer(serializers.ModelSerializer):
