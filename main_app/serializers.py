@@ -23,10 +23,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
     patient = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     is_liked_by_user = serializers.SerializerMethodField() 
+    comments = serializers.SerializerMethodField()
+    
 
     class Meta:
         model = Post
@@ -52,6 +55,18 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return PostLike.objects.filter(post=obj, user=request.user).exists()
         return False
+    
+    def get_comments(self, obj): 
+        from .serializers import PostCommentSerializer
+        comments = PostComment.objects.filter(post=obj).order_by("-created_at")
+        return PostCommentSerializer(comments, many=True).data
+    
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
 
 
 class PostCommentSerializer(serializers.ModelSerializer):

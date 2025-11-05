@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
@@ -16,6 +17,7 @@ from .serializers import UserProfileSerializer, UserSerializer, PostSerializer, 
 
 class PostListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser] 
     
     def get(self, request):
         user = request.user
@@ -36,7 +38,7 @@ class PostListCreateView(APIView):
         if profile.role != 'patient':
             return Response({'error': 'Only patients can create posts.'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = PostSerializer(data=request.data)
+        serializer = PostSerializer(data=request.data ,context={"request": request})
         if serializer.is_valid():
             serializer.save(patient=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -191,6 +193,7 @@ class PostCommentListCreateView(APIView):
         comments = PostComment.objects.filter(post_id=post_id).order_by("-created_at")
         serializer = PostCommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
     def post(self, request, post_id):
         profile = get_object_or_404(UserProfile, user=request.user)
@@ -207,7 +210,12 @@ class PostCommentListCreateView(APIView):
 
 class PostCommentDetailView(APIView):
     permission_classes = [IsAuthenticated]
-
+    
+    def get(self, request, comment_id):
+        comment = get_object_or_404(PostComment, id=comment_id)
+        serializer = PostCommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
     def put(self, request, comment_id):
         comment = get_object_or_404(PostComment, id=comment_id)
 
@@ -401,6 +409,9 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         user_data = UserSerializer(user).data
+        
+        refresh["username"] = user.username
+        refresh["role"] = user.userprofile.role
 
         return Response(
             {
