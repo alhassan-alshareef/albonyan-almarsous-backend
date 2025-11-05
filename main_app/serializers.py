@@ -23,7 +23,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    image = serializers.ImageField(required=False, allow_null=True)
     patient = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
@@ -61,11 +61,7 @@ class PostSerializer(serializers.ModelSerializer):
         comments = PostComment.objects.filter(post=obj).order_by("-created_at")
         return PostCommentSerializer(comments, many=True).data
     
-    def get_image(self, obj):
-        request = self.context.get("request")
-        if obj.image:
-            return request.build_absolute_uri(obj.image.url)
-        return None
+
 
 
 
