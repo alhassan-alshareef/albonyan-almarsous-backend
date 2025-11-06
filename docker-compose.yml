@@ -1,0 +1,52 @@
+services:
+  database:
+    image: postgres:15
+    container_name: albonyan_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Toty@123456
+      POSTGRES_DB: albonyan_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: albonyan_backend
+    command: >
+      bash -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - ./:/usr/src/app
+      - ./media:/usr/src/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      - database
+
+  frontend:
+    build:
+      context: ../Albonyan-Almarsous-frontend/
+      dockerfile: Dockerfile
+    container_name: albonyan_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../Albonyan-Almarsous-frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
