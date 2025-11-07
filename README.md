@@ -122,24 +122,24 @@ The diagram below shows the main models and the relationships between them in th
 ### 1️⃣ Clone both repositories inside the same parent folder
 ```bash
 parent-folder/
-├── Albonyan-AlMarsous-backend/
-└── Albonyan-AlMarsous-frontend/
+├── Albonyan-Almarsous-backend/
+└── Albonyan-Almarsous-frontend/
 ```
 
 ### 2️⃣ Clone the backend repository
 ```bash
-git clone https://github.com/YourUsername/Albonyan-AlMarsous-backend.git
+git clone https://github.com/alhassan-alshareef/Albonyan-Almarsous-backend.git
 
 ```
 
 ### 3️⃣ Clone the frontend repository
 ```bash
-git clone https://github.com/YourUsername/Albonyan-AlMarsous-frontend.git
+git clone https://github.com/alhassan-alshareef/Albonyan-Almarsous-frontend.git
 
 ```
 ### 4️⃣ Run Docker Compose from the backend folder
 ```bash
-cd Albonyan-AlMarsous-backend
+cd Albonyan-Almarsous-backend
 docker compose up --build
 ```
 
@@ -167,4 +167,5 @@ Saudi Digital Academy – Software Engineering Bootcamp
 
 
 🌐 [GitHub Profile](https://github.com/alhassan-alshareef)
+
 
